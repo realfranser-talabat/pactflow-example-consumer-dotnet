@@ -29,7 +29,8 @@ namespace tests
 
             _products = new List<object>()
             {
-                new { id = BurgerProductId, name = "burger", type = "food" }
+                new { id = BurgerProductId, name = "burger", type = "food" },
+                new { id = "111", name = "pizza", type = "food" },
             };
 
             var config = new PactConfig
@@ -61,7 +62,7 @@ namespace tests
                 List<Product> result = await consumer.GetProducts(ctx.MockServerUri.ToString().TrimEnd('/'));
                 // Assert
                 result.Should().NotBeNull();
-                result.Should().HaveCount(1);
+                result.Should().HaveCount(2);
                 Assert.Equal(BurgerProductId,result[0].id);
                 Assert.Equal("burger",result[0].name);
                 Assert.Equal("food",result[0].type);
