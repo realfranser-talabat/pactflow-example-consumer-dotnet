@@ -53,7 +53,7 @@ namespace tests
                     .WillRespond()
                     .WithStatus(HttpStatusCode.OK)
                     .WithHeader("Content-Type", "application/json; charset=utf-8")
-                    .WithJsonBody(Match.MinType(_products,2));
+                    .WithJsonBody(_products);
 
             await _pact.VerifyAsync(async ctx =>
             {
