@@ -17,42 +17,44 @@ namespace tests
 {
     public class ConsumerPactTests
     {
-        private IPactBuilderV3 pact;
+        private const string BurgerProductId = "27";
+
+        private readonly IPactBuilderV3 _pact;
         // private readonly int port = 9222;
 
-        private readonly List<object> products;
+        private readonly List<object> _products;
 
         public ConsumerPactTests(ITestOutputHelper output)
         {
 
-            products = new List<object>()
+            _products = new List<object>()
             {
-                new { id = "27", name = "burger", type = "food" }
+                new { id = BurgerProductId, name = "burger", type = "food" }
             };
 
-            var Config = new PactConfig
+            var config = new PactConfig
             {
                 PactDir = Path.Join("..", "..", "..", "..", "pacts"),
                 Outputters = new List<IOutput> { new XunitOutput(output), new ConsoleOutput() },
                 LogLevel = PactLogLevel.Debug
             };
 
-            pact = Pact.V3("pactflow-example-consumer-dotnet", "pactflow-example-provider-dotnet", Config).WithHttpInteractions();
+            _pact = Pact.V3("pactflow-example-consumer-dotnet", "pactflow-example-provider-dotnet", config).WithHttpInteractions();
         }
 
         [Fact]
         public async Task RetrieveProducts()
         {
             // Arrange
-            pact.UponReceiving("A request to get products")
+            _pact.UponReceiving("A request to get products")
                         .Given("products exist")
                         .WithRequest(HttpMethod.Get, "/products")
                     .WillRespond()
                     .WithStatus(HttpStatusCode.OK)
                     .WithHeader("Content-Type", "application/json; charset=utf-8")
-                    .WithJsonBody(Match.MinType(products[0],1));
+                    .WithJsonBody(Match.MinType(_products[0],1));
 
-            await pact.VerifyAsync(async ctx =>
+            await _pact.VerifyAsync(async ctx =>
             {
                 // Act
                 var consumer = new ProductClient();
@@ -60,9 +62,34 @@ namespace tests
                 // Assert
                 result.Should().NotBeNull();
                 result.Should().HaveCount(1);
-                Assert.Equal("27",result[0].id);
+                Assert.Equal(BurgerProductId,result[0].id);
                 Assert.Equal("burger",result[0].name);
                 Assert.Equal("food",result[0].type);
+            });
+        }
+        
+        [Fact]
+        public async Task RetrieveProductById()
+        {
+            // Arrange
+            _pact.UponReceiving("A request to get product by id")
+                        .Given("products exist")
+                        .WithRequest(HttpMethod.Get, $"/product/{BurgerProductId}")
+                    .WillRespond()
+                    .WithStatus(HttpStatusCode.OK)
+                    .WithHeader("Content-Type", "application/json; charset=utf-8")
+                    .WithJsonBody(Match.MinType(_products[0],1));
+
+            await _pact.VerifyAsync(async ctx =>
+            {
+                // Act
+                var consumer = new ProductClient();
+                var result = await consumer.GetProductById(ctx.MockServerUri.ToString().TrimEnd('/'), BurgerProductId);
+                // Assert
+                result.Should().NotBeNull();
+                Assert.Equal(BurgerProductId, result.id);
+                Assert.Equal("burger",result.name);
+                Assert.Equal("food",result.type);
             });
         }
     }
